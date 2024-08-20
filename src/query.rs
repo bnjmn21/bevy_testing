@@ -110,7 +110,7 @@ where
                 mismatch(
                     "One of the given bundles wasn't found in the query.",
                     &given,
-                    None::<()>,
+                    &self.query,
                 );
             }
         }
