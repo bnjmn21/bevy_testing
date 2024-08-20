@@ -1,7 +1,7 @@
-//! ![Crates.io Size](https://img.shields.io/crates/size/bevy_testing?label=size)
-//! ![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/bnjmn21/bevy_testing)
-//! ![MIT License](https://img.shields.io/crates/l/bevy_testing)
-//! ![Bevy version 0.14.1](https://img.shields.io/badge/bevy-0.14.1-green)
+//! [![Crates.io Size](https://img.shields.io/crates/size/bevy_testing?label=size)](https://crates.io/crates/bevy_testing)
+//! [![GitHub Issues or Pull Requests](https://img.shields.io/github/issues-pr/bnjmn21/bevy_testing)](https://github.com/bnjmn21/bevy_testing/issues?q=is%3Aissue+is%3Aopen)
+//! [![MIT License](https://img.shields.io/crates/l/bevy_testing)](https://github.com/bnjmn21/bevy_testing/blob/master/LICENSE)
+//! [![Bevy version 0.14.1](https://img.shields.io/badge/bevy-0.14.1-green)](https://docs.rs/bevy/0.14.1/bevy/index.html)
 //!
 //! # Test things [bevy](https://bevyengine.org/)!
 //!
@@ -49,7 +49,7 @@
 //!
 //! ## Usage
 //!
-//! just [`use bevy_testing::TestApp` (view docs)](https://docs.rs/bevy_testing)!
+//! just [`use bevy_testing::TestApp` (view docs)](https://docs.rs/bevy_testing/latest/bevy_testing/trait.TestApp.html)!
 //!
 //! In cases where you need more control, you can always get the world via
 //! `App::world()` and `App::world_mut()`.
@@ -70,18 +70,30 @@
 //! `.any()`         | if any bundle matches the given predicate
 //! `.length()`      | if the query matches the given length
 //! `.not()` ...     | to invert the test
+//!
+//! ## Bevy versions
+//!
+//! bevy   | bevy_testing
+//! -------|--
+//! `0.14` | `0.1.1`
+//!
 
 mod query;
 
 use std::{any::type_name, fmt::Debug};
 
 use bevy::{
-    ecs::{query::ReadOnlyQueryData, world::SpawnBatchIter},
+    ecs::{
+        query::{QueryFilter, ReadOnlyQueryData},
+        world::SpawnBatchIter,
+    },
     prelude::*,
 };
 use colored::Colorize;
 use query::AssertQuery;
+use sealed::sealed;
 
+#[sealed]
 pub trait TestApp {
     /// Spawns a new [`Entity`] and returns a corresponding [`EntityWorldMut`], which can be used
     /// to add components to the entity or retrieve its id.
@@ -109,7 +121,91 @@ pub trait TestApp {
     /// assert_eq!(position.x, 0.0);
     /// ```
     fn spawn_empty(&mut self) -> EntityWorldMut;
+
+    /// Spawns a new [`Entity`] with a given [`Bundle`] of [components](`Component`) and returns
+    /// a corresponding [`EntityWorldMut`], which can be used to add components to the entity or
+    /// retrieve its id.
+    ///
+    /// ```
+    /// use bevy_ecs::{bundle::Bundle, component::Component, world::World};
+    ///
+    /// #[derive(Component)]
+    /// struct Position {
+    ///   x: f32,
+    ///   y: f32,
+    /// }
+    ///
+    /// #[derive(Component)]
+    /// struct Velocity {
+    ///     x: f32,
+    ///     y: f32,
+    /// };
+    ///
+    /// #[derive(Component)]
+    /// struct Name(&'static str);
+    ///
+    /// #[derive(Bundle)]
+    /// struct PhysicsBundle {
+    ///     position: Position,
+    ///     velocity: Velocity,
+    /// }
+    ///
+    /// let mut app = App::new();
+    ///
+    /// // `spawn` can accept a single component:
+    /// app.spawn(Position { x: 0.0, y: 0.0 });
+    ///
+    /// // It can also accept a tuple of components:
+    /// app.spawn((
+    ///     Position { x: 0.0, y: 0.0 },
+    ///     Velocity { x: 1.0, y: 1.0 },
+    /// ));
+    ///
+    /// // Or it can accept a pre-defined Bundle of components:
+    /// app.spawn(PhysicsBundle {
+    ///     position: Position { x: 2.0, y: 2.0 },
+    ///     velocity: Velocity { x: 0.0, y: 4.0 },
+    /// });
+    ///
+    /// let entity = app
+    ///     // Tuples can also mix Bundles and Components
+    ///     .spawn((
+    ///         PhysicsBundle {
+    ///             position: Position { x: 2.0, y: 2.0 },
+    ///             velocity: Velocity { x: 0.0, y: 4.0 },
+    ///         },
+    ///         Name("Elaina Proctor"),
+    ///     ))
+    ///     // Calling id() will return the unique identifier for the spawned entity
+    ///     .id();
+    ///
+    /// let position = world.component::<Position>(entity);
+    /// assert_eq!(position.x, 2.0);
+    /// ```
     fn spawn<B: Bundle>(&mut self, bundle: B) -> EntityWorldMut;
+
+    /// Spawns a batch of entities with the same component [`Bundle`] type. Takes a given
+    /// [`Bundle`] iterator and returns a corresponding [`Entity`] iterator.
+    /// This is more efficient than spawning entities and adding components to them individually,
+    /// but it is limited to spawning entities with the same [`Bundle`] type, whereas spawning
+    /// individually is more flexible.
+    ///
+    /// ```
+    /// use bevy_ecs::{component::Component, entity::Entity, world::World};
+    ///
+    /// #[derive(Component)]
+    /// struct Str(&'static str);
+    /// #[derive(Component)]
+    /// struct Num(u32);
+    ///
+    /// let mut app = App::new();
+    /// let entities = app.spawn_batch(vec![
+    ///   (Str("a"), Num(0)), // the first entity
+    ///   (Str("b"), Num(1)), // the second entity
+    /// ]).collect::<Vec<Entity>>();
+    ///
+    /// assert_eq!(entities.len(), 2);
+    /// ```
     fn spawn_batch<I>(&mut self, iter: I) -> SpawnBatchIter<'_, I::IntoIter>
     where
         I: IntoIterator,
@@ -269,6 +365,8 @@ pub trait TestApp {
     /// Returns an [`AssertQuery`] which can be used to perform tests on a query.
     /// To invert the test, use [`AssertQuery::not`].
     ///
+    /// If you need to use a query filter, use [`App::query_filtered`].
+    ///
     /// ```
     /// use bevy_testing::p::*;
     ///
@@ -289,6 +387,39 @@ pub trait TestApp {
     ///     .length(3);
     /// ```
     fn query<'w, D: ReadOnlyQueryData>(&'w mut self) -> AssertQuery<'w, D>
+    where
+        D::Item<'w>: PartialEq + Debug;
+
+    /// Returns an [`AssertQuery`] which can be used to perform tests on a query, with a query filter.
+    /// To invert the test, use [`AssertQuery::not`].
+    ///
+    /// If you don't need the filter, use [`App::query`].
+    ///
+    /// Note that some filters such as [`Changed`] might behave unexpectedly.
+    ///
+    /// ```
+    /// use bevy_testing::p::*;
+    ///
+    /// #[derive(Component, Debug, PartialEq)]
+    /// struct Position {
+    ///   x: f32,
+    ///   y: f32,
+    /// }
+    ///
+    /// #[derive(Component, Debug, PartialEq)]
+    /// struct Marker;
+    ///
+    /// let mut app = App::new();
+    /// app.spawn((Position { x: 0.0, y: 0.0 }, Marker));
+    /// app.spawn((Position { x: 1.0, y: 2.0 }, Marker));
+    /// app.spawn(Position { x: 4.5, y: 1.0 });
+    ///
+    /// app.query_filtered::<&Position, With<Marker>>()
+    ///     .has(&Position { x: 1.0, y: 2.0 })
+    ///     .not().has(&Position { x: 4.5, y: 1.0 })
+    ///     .length(2);
+    /// ```
+    fn query_filtered<'w, D: ReadOnlyQueryData, F: QueryFilter>(&'w mut self) -> AssertQuery<'w, D>
     where
         D::Item<'w>: PartialEq + Debug;
 
@@ -371,6 +502,7 @@ pub trait TestApp {
     fn update_n_times(&mut self, amount: u32);
 }
 
+#[sealed]
 impl TestApp for App {
     fn spawn_empty(&mut self) -> EntityWorldMut {
         self.world_mut().spawn_empty()
@@ -422,6 +554,18 @@ impl TestApp for App {
         D::Item<'w>: PartialEq + Debug,
     {
         let mut query = self.world_mut().query::<D>();
+        let collected = query.iter(self.world()).collect::<Vec<_>>();
+        AssertQuery {
+            query: collected,
+            invert: false,
+        }
+    }
+
+    fn query_filtered<'w, D: ReadOnlyQueryData, F: QueryFilter>(&'w mut self) -> AssertQuery<'w, D>
+    where
+        D::Item<'w>: PartialEq + Debug,
+    {
+        let mut query = self.world_mut().query_filtered::<D, F>();
         let collected = query.iter(self.world()).collect::<Vec<_>>();
         AssertQuery {
             query: collected,
