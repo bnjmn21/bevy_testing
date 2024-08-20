@@ -2,6 +2,18 @@
 name = "bevy_testing"
 version = "0.1.0"
 edition = "2021"
+authors = ["bnjmn21 <benma2321@gmail.com>"]
+description = "Testing library for bevy"
+readme = "README.md"
+repository = "https://github.com/bnjmn21/bevy_testing"
+license = "MIT"
+keywords = ["bevy", "test", "game-dev", "testing", "game"]
+categories = [
+    "development-tools",
+    "development-tools::testing",
+    "game-development",
+]
+
 
 [dependencies]
 bevy = { version = "0.14.1", default-features = false }
