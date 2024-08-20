@@ -35,9 +35,6 @@ In cases where you need more control, you can always get the world via
 
 This library also exports `bevy_testing::p`, short for prelude, which contains the entire bevy prelude as well as `TestApp`.
 
-**Note:** By default, the entire crate disables itself when `cfg(not(test))` to improve compile times.
-You can disable this behaviour with the `always` feature flag.
-
 ## Query Matching
 
 Use `App::query()` to check...
@@ -52,9 +49,3 @@ method name      | description
 `.any()`         | if any bundle matches the given predicate
 `.length()`      | if the query matches the given length
 `.not()` ...     | to invert the test
-
-## Feature Flags
-
-name     | description
----------|--------
-`always` | always enable this crate, see [Usage](#usage)
