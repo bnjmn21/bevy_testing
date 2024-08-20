@@ -127,7 +127,7 @@ pub trait TestApp {
     /// retrieve its id.
     ///
     /// ```
-    /// use bevy_ecs::{bundle::Bundle, component::Component, world::World};
+    /// use bevy_testing::p::*;
     ///
     /// #[derive(Component)]
     /// struct Position {
@@ -179,7 +179,7 @@ pub trait TestApp {
     ///     // Calling id() will return the unique identifier for the spawned entity
     ///     .id();
     ///
-    /// let position = world.component::<Position>(entity);
+    /// let position = app.component::<Position>(entity);
     /// assert_eq!(position.x, 2.0);
     /// ```
     fn spawn<B: Bundle>(&mut self, bundle: B) -> EntityWorldMut;
@@ -191,7 +191,7 @@ pub trait TestApp {
     /// individually is more flexible.
     ///
     /// ```
-    /// use bevy_ecs::{component::Component, entity::Entity, world::World};
+    /// use bevy_testing::p::*;
     ///
     /// #[derive(Component)]
     /// struct Str(&'static str);
