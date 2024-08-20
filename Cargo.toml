@@ -1,6 +1,6 @@
 [package]
 name = "bevy_testing"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["bnjmn21 <benma2321@gmail.com>"]
 description = "Testing library for bevy"
